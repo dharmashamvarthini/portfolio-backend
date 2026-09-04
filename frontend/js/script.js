@@ -1,5 +1,5 @@
 // ============ API CONFIGURATION ============
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/.netlify/functions/api';
 
 // ============ TYPING ANIMATION ============
 const roles = ['Full Stack Developer', 'Flutter Developer', 'Problem Solver', 'Creative Thinker'];
@@ -125,27 +125,72 @@ function initCounters() {
     document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
 }
 
-// ============ LOAD PROJECTS ============
+// ============ CONTACT FORM ============
+function initContactForm() {
+    const form = document.getElementById('contact-form');
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const subject = document.getElementById('subject').value.trim();
+        const message = document.getElementById('message').value.trim();
+        const formMessage = document.getElementById('form-message');
+        if (!name || !email || !message) {
+            formMessage.textContent = '⚠️ Please fill all fields.';
+            formMessage.className = 'error';
+            return;
+        }
+        const mailtoLink = `mailto:dharmashamvarthini29@gmail.com?subject=${encodeURIComponent(subject || 'Portfolio Contact')}&body=Name: ${encodeURIComponent(name)}%0AEmail: ${encodeURIComponent(email)}%0A%0A${encodeURIComponent(message)}`;
+        window.open(mailtoLink, '_blank');
+        formMessage.textContent = '✅ Email opened! Please send the message.';
+        formMessage.className = 'success';
+        form.reset();
+    });
+}
+
+// ============ LOAD PROJECTS (NEW & IMPROVED!) ============
 async function loadProjects() {
     const grid = document.getElementById('project-grid');
-    if (!grid) return;
+    if (!grid) {
+        console.error('❌ Project grid not found!');
+        return;
+    }
+
+    grid.innerHTML = '<div class="loader"></div>';
+
     try {
+        console.log('🔄 Fetching projects from:', `${API_URL}/projects`);
         const response = await fetch(`${API_URL}/projects`);
-        if (!response.ok) throw new Error('Failed to fetch');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
         const projects = await response.json();
+        console.log('✅ Projects loaded:', projects);
         renderProjects(projects);
+        
     } catch (error) {
-        grid.innerHTML = `<p style="text-align:center; grid-column:1/-1; color:#FF6B6B; padding:2rem;">❌ Failed to load projects</p>`;
+        console.error('❌ Error loading projects:', error);
+        grid.innerHTML = `
+            <p style="text-align:center; color:#FF6B6B; padding:2rem; grid-column:1/-1;">
+                ❌ Failed to load projects: ${error.message}
+            </p>
+        `;
     }
 }
 
+// ============ RENDER PROJECTS ============
 function renderProjects(projects) {
     const grid = document.getElementById('project-grid');
     if (!grid) return;
+
     if (!projects || projects.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No projects yet</p>';
+        grid.innerHTML = '<p style="text-align:center; padding:2rem; grid-column:1/-1;">No projects found.</p>';
         return;
     }
+
     grid.innerHTML = projects.map(project => `
         <div class="project-card" data-category="${project.category || 'other'}">
             <h3 class="project-title">${project.title}</h3>
@@ -159,17 +204,26 @@ function renderProjects(projects) {
             </div>
         </div>
     `).join('');
+
+    // Apply active filter
     const activeFilter = document.querySelector('.filter-btn.active');
-    if (activeFilter) applyFilter(activeFilter.dataset.filter);
+    if (activeFilter) {
+        applyFilter(activeFilter.dataset.filter);
+    }
 }
 
-// ============ PROJECT FILTERS ============
+// ============ FILTER FUNCTION ============
 function applyFilter(filter) {
     document.querySelectorAll('.project-card').forEach(card => {
-        card.style.display = (filter === 'all' || card.dataset.category === filter) ? 'block' : 'none';
+        if (filter === 'all' || card.dataset.category === filter) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
     });
 }
 
+// ============ FILTER BUTTONS ============
 function initFilters() {
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -180,72 +234,9 @@ function initFilters() {
     });
 }
 
-// ============ LOAD BLOGS ============
-async function loadBlogs() {
-    const grid = document.getElementById('blog-grid');
-    if (!grid) return;
-    try {
-        const response = await fetch(`${API_URL}/blog`);
-        if (!response.ok) throw new Error('Failed to fetch');
-        const blogs = await response.json();
-        renderBlogs(blogs);
-    } catch (error) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No blog posts</p>';
-    }
-}
-
-function renderBlogs(blogs) {
-    const grid = document.getElementById('blog-grid');
-    if (!grid) return;
-    if (!blogs || blogs.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1;">No blog posts</p>';
-        return;
-    }
-    grid.innerHTML = blogs.map(blog => `
-        <div class="blog-card">
-            <h3>${blog.title}</h3>
-            <p>${blog.excerpt || blog.content.substring(0, 100) + '...'}</p>
-            <div class="blog-meta">
-                <span>📅 ${new Date(blog.createdAt).toLocaleDateString()}</span>
-                <span>👁️ ${blog.views || 0}</span>
-            </div>
-            <div class="blog-tags">${(blog.tags || []).map(tag => `<span>${tag}</span>`).join('')}</div>
-        </div>
-    `).join('');
-}
-
-// ============ CONTACT FORM (SIMPLE WORKING) ============
-function initContactForm() {
-    const form = document.getElementById('contact-form');
-    if (!form) return;
-
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const subject = document.getElementById('subject').value.trim();
-        const message = document.getElementById('message').value.trim();
-        const formMessage = document.getElementById('form-message');
-
-        if (!name || !email || !message) {
-            formMessage.textContent = '⚠️ Please fill all fields.';
-            formMessage.className = 'error';
-            return;
-        }
-
-        // Open email client directly
-        const mailtoLink = `mailto:dharmashamvarthini29@gmail.com?subject=${encodeURIComponent(subject || 'Portfolio Contact')}&body=Name: ${encodeURIComponent(name)}%0AEmail: ${encodeURIComponent(email)}%0A%0A${encodeURIComponent(message)}`;
-        window.open(mailtoLink, '_blank');
-
-        formMessage.textContent = '✅ Email opened! Please send the message.';
-        formMessage.className = 'success';
-        form.reset();
-    });
-}
-
-// ============ INITIALIZE ============
-document.addEventListener('DOMContentLoaded', () => {
+// ============ INITIALIZE EVERYTHING ============
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Portfolio loading...');
     typeEffect();
     initDarkMode();
     initMobileMenu();
@@ -254,8 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollAnimations();
     initCounters();
     initFilters();
-    loadProjects();
-    loadBlogs();
     initContactForm();
-    console.log('🚀 Portfolio loaded!');
+    loadProjects();
+    console.log('✅ Portfolio loaded successfully!');
 });
