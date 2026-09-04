@@ -1,6 +1,3 @@
-// ============ API CONFIGURATION ============
-const API_URL = '/.netlify/functions/api';
-
 // ============ TYPING ANIMATION ============
 const roles = ['Full Stack Developer', 'Flutter Developer', 'Problem Solver', 'Creative Thinker'];
 let roleIndex = 0, charIndex = 0, isDeleting = false;
@@ -125,118 +122,51 @@ function initCounters() {
     document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
 }
 
+// ============ PROJECT FILTERS ============
+function initFilters() {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            document.querySelectorAll('.project-card').forEach(card => {
+                card.style.display = (filter === 'all' || card.dataset.category === filter) ? 'block' : 'none';
+            });
+        });
+    });
+}
+
 // ============ CONTACT FORM ============
 function initContactForm() {
     const form = document.getElementById('contact-form');
     if (!form) return;
+
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const subject = document.getElementById('subject').value.trim();
         const message = document.getElementById('message').value.trim();
         const formMessage = document.getElementById('form-message');
+
         if (!name || !email || !message) {
             formMessage.textContent = '⚠️ Please fill all fields.';
             formMessage.className = 'error';
             return;
         }
+
         const mailtoLink = `mailto:dharmashamvarthini29@gmail.com?subject=${encodeURIComponent(subject || 'Portfolio Contact')}&body=Name: ${encodeURIComponent(name)}%0AEmail: ${encodeURIComponent(email)}%0A%0A${encodeURIComponent(message)}`;
         window.open(mailtoLink, '_blank');
+
         formMessage.textContent = '✅ Email opened! Please send the message.';
         formMessage.className = 'success';
         form.reset();
     });
 }
 
-// ============ LOAD PROJECTS (NEW & IMPROVED!) ============
-async function loadProjects() {
-    const grid = document.getElementById('project-grid');
-    if (!grid) {
-        console.error('❌ Project grid not found!');
-        return;
-    }
-
-    grid.innerHTML = '<div class="loader"></div>';
-
-    try {
-        console.log('🔄 Fetching projects from:', `${API_URL}/projects`);
-        const response = await fetch(`${API_URL}/projects`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const projects = await response.json();
-        console.log('✅ Projects loaded:', projects);
-        renderProjects(projects);
-        
-    } catch (error) {
-        console.error('❌ Error loading projects:', error);
-        grid.innerHTML = `
-            <p style="text-align:center; color:#FF6B6B; padding:2rem; grid-column:1/-1;">
-                ❌ Failed to load projects: ${error.message}
-            </p>
-        `;
-    }
-}
-
-// ============ RENDER PROJECTS ============
-function renderProjects(projects) {
-    const grid = document.getElementById('project-grid');
-    if (!grid) return;
-
-    if (!projects || projects.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; padding:2rem; grid-column:1/-1;">No projects found.</p>';
-        return;
-    }
-
-    grid.innerHTML = projects.map(project => `
-        <div class="project-card" data-category="${project.category || 'other'}">
-            <h3 class="project-title">${project.title}</h3>
-            <p class="project-description">${project.description || ''}</p>
-            <div class="project-tech">
-                ${(project.technologies || []).map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
-            </div>
-            <div class="project-links">
-                ${project.liveLink ? `<a href="${project.liveLink}" target="_blank">🔗 Live Demo</a>` : ''}
-                ${project.githubLink ? `<a href="${project.githubLink}" target="_blank">📂 GitHub</a>` : ''}
-            </div>
-        </div>
-    `).join('');
-
-    // Apply active filter
-    const activeFilter = document.querySelector('.filter-btn.active');
-    if (activeFilter) {
-        applyFilter(activeFilter.dataset.filter);
-    }
-}
-
-// ============ FILTER FUNCTION ============
-function applyFilter(filter) {
-    document.querySelectorAll('.project-card').forEach(card => {
-        if (filter === 'all' || card.dataset.category === filter) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-// ============ FILTER BUTTONS ============
-function initFilters() {
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            applyFilter(this.dataset.filter);
-        });
-    });
-}
-
-// ============ INITIALIZE EVERYTHING ============
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Portfolio loading...');
+// ============ INITIALIZE ============
+document.addEventListener('DOMContentLoaded', () => {
     typeEffect();
     initDarkMode();
     initMobileMenu();
@@ -246,6 +176,5 @@ document.addEventListener('DOMContentLoaded', function() {
     initCounters();
     initFilters();
     initContactForm();
-    loadProjects();
-    console.log('✅ Portfolio loaded successfully!');
+    console.log('🚀 Portfolio loaded!');
 });
